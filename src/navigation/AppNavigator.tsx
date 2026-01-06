@@ -17,13 +17,17 @@ export const AppNavigator: React.FC = () => {
     );
   }
 
+  // Explicitly convert to boolean to prevent type casting errors
+  const isAuthenticated = Boolean(authState.isAuthenticated);
+  const isUnlocked = Boolean(authState.isUnlocked);
+
   // Not authenticated - show login screen
-  if (!authState.isAuthenticated) {
+  if (!isAuthenticated) {
     return <LoginScreen />;
   }
 
   // Authenticated but not unlocked (no master key) - show master key file screen
-  if (!authState.isUnlocked) {
+  if (!isUnlocked) {
     return <MasterKeyFileScreen />;
   }
 

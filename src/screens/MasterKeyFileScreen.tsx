@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Share, Platform } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as Crypto from 'expo-crypto';
 import { useAuth } from '../contexts/AuthContext';
@@ -135,49 +135,41 @@ export const MasterKeyFileScreen: React.FC = () => {
     }
   };
 
-  const handleSelectFile = async () => {
-    setError('');
-    setSuccess('');
-    setIsLoading(true);
+const handleSelectFile = async () => {
+  try {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: 'text/plain', // Or '*/*'
+      copyToCacheDirectory: true, // <--- CRITICAL FOR ANDROID
+      multiple: false
+    });
 
-    try {
-      // Open document picker for any readable text file
-      const result = await DocumentPicker.getDocumentAsync({
-        type: '*/*', // Accept all file types
-        copyToCacheDirectory: true,
-      });
+    if (result.canceled) return;
 
-      if (result.canceled) {
-        setIsLoading(false);
-        return;
-      }
+    const asset = result.assets[0];
+    
+    // Read the file content
+    // Because we used copyToCacheDirectory, the URI is safe to read
+    const fileContent = await FileSystem.readAsStringAsync(asset.uri);
 
-      const fileUri = result.assets[0].uri;
-      
-      // Read file content
-      const fileContent = await FileSystem.readAsStringAsync(fileUri);
-
-      if (!fileContent || fileContent.trim().length === 0) {
-        throw new Error('File is empty or cannot be read as text');
-      }
-
-      // If first time, store the encrypted file content
-      if (isFirstTime) {
-        await storeMasterKeyFile(fileContent);
-        setSuccess('Master key file stored successfully!');
-      }
-
-      // Unlock with master key
-      await unlockWithMasterKey(fileContent);
-      
-      setSuccess('Unlocked successfully!');
-    } catch (err) {
-      console.error('File selection error:', err);
-      setError((err as Error).message || 'Failed to read file. Please try again.');
-    } finally {
-      setIsLoading(false);
+    //Alert.alert(fileContent)
+    // Validate that it looks like a key (optional but good)
+    if (!fileContent || fileContent.length < 10) {
+      throw new Error("File appears empty or invalid");
     }
-  };
+
+    // Now call your store function
+    await storeMasterKeyFile(fileContent);
+    await unlockWithMasterKey(fileContent);
+    Alert.alert("Teste", "Picker funcionou, o erro é na próxima função.4");
+    //setSuccess('Key imported successfully!');
+
+  } catch (err: any) {
+    // Log the REAL error to console so you can see it
+    console.error("Full Error Details:", err);
+    
+    setError(`File selection error: ${err.message}`);
+  }
+};
 
   const handleReEnterFile = () => {
     Alert.alert(
