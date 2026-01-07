@@ -52,12 +52,6 @@ export const login = async (
     );
 
     const { token } = response.data;
-    console.log('response.data')
-    console.log(response.data)
-    // Validate token exists
-    if (!token) {
-      throw new Error('No token received from server');
-    }
     
     // Create user object
     const user: User = {
@@ -71,10 +65,7 @@ export const login = async (
     
     return { token, user };
   } catch (error) {
-    console.error('Login error:', error);
     if (axios.isAxiosError(error)) {
-      console.error('Response data:', error.response?.data);
-      console.error('Response status:', error.response?.status);
       throw new Error(
         error.response?.data?.message || error.message || 'Network error during login'
       );

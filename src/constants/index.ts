@@ -16,7 +16,7 @@ export const STORAGE_KEYS = {
 
 // API endpoints (relative paths, will be appended to base URL)
 export const API_ENDPOINTS = {
-  LOGIN: 'api/auth/login',
+  LOGIN: '/auth/login',
   LOGOUT: '/auth/logout',
   REFRESH_TOKEN: '/auth/refresh',
   CREDENTIALS: '/credentials',
