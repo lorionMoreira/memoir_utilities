@@ -1,47 +1,164 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  RefreshControl,
+  Alert,
+} from 'react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../styles/colors';
+import { getCredentials } from '../services/credentialService';
+import { Credential } from '../types';
 
 export default function CredencialScreen() {
-  const { user, logout } = useAuth();
+  const navigation = useNavigation();
+  const [credentials, setCredentials] = useState<Credential[]>([]);
+  const [filteredCredentials, setFilteredCredentials] = useState<Credential[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-            } catch (error) {
-              console.error('Logout error:', error);
-            }
-          },
-        },
-      ],
-      { cancelable: true }
-    );
+  const loadCredentials = async () => {
+    try {
+      const data = await getCredentials();
+      setCredentials(data);
+      setFilteredCredentials(data);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to load credentials');
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsLoading(true);
+      loadCredentials();
+    }, [])
+  );
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    loadCredentials();
+  };
+
+  const handleSearch = (text: string) => {
+    setSearchQuery(text);
+    if (text.trim() === '') {
+      setFilteredCredentials(credentials);
+    } else {
+      const filtered = credentials.filter((cred) =>
+        cred.company.toLowerCase().includes(text.toLowerCase())
+      );
+      setFilteredCredentials(filtered);
+    }
+  };
+
+  const handleCredentialPress = (credential: Credential) => {
+    navigation.navigate('EditCredential' as never, { credential } as never);
+  };
+
+  const handleAddNew = () => {
+    navigation.navigate('AddCredential' as never);
+  };
+
+  const favorites = filteredCredentials.filter((cred) => cred.favoritos);
+  const records = filteredCredentials.filter((cred) => !cred.favoritos);
+
+  const renderCredentialItem = ({ item }: { item: Credential }) => (
+    <TouchableOpacity
+      style={styles.credentialItem}
+      onPress={() => handleCredentialPress(item)}
+    >
+      <View style={styles.credentialContent}>
+        <Text style={styles.credentialTitle}>{item.company}</Text>
+        <Text style={styles.credentialSubtitle}>{item.senha}</Text>
+        <Text style={styles.credentialDate}>
+          {new Date(item.updatedAt).toLocaleDateString()}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+    </TouchableOpacity>
+  );
+
+  const renderSectionHeader = (title: string) => (
+    <TouchableOpacity style={styles.sectionHeader}>
+      <Ionicons name="chevron-down" size={20} color={colors.text} />
+      <Text style={styles.sectionTitle}>{title}</Text>
+    </TouchableOpacity>
+  );
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Welcome!</Text>
-        {user?.username ? (
-          <Text style={styles.username}>{user.username}</Text>
-        ) : null}
-        <Text style={styles.subtitle}>You are successfully logged in</Text>
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color={colors.textTertiary} style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search all records..."
+          placeholderTextColor={colors.textTertiary}
+          value={searchQuery}
+          onChangeText={handleSearch}
+        />
+      </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
+      <FlatList
+        data={[]}
+        renderItem={null}
+        ListHeaderComponent={
+          <>
+            {favorites.length > 0 && (
+              <>
+                {renderSectionHeader('Favorites')}
+                {favorites.map((item) => (
+                  <View key={item.uuid}>{renderCredentialItem({ item })}</View>
+                ))}
+              </>
+            )}
+
+            {records.length > 0 && (
+              <>
+                {renderSectionHeader('Records')}
+                {records.map((item) => (
+                  <View key={item.uuid}>{renderCredentialItem({ item })}</View>
+                ))}
+              </>
+            )}
+
+            {filteredCredentials.length === 0 && (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No credentials found</Text>
+              </View>
+            )}
+          </>
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+          />
+        }
+        contentContainerStyle={styles.listContent}
+      />
+
+      <View style={styles.footer}>
+        <TouchableOpacity style={styles.addButton} onPress={handleAddNew}>
+          <Text style={styles.addButtonText}>Novo registro</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -53,37 +170,102 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    backgroundColor: colors.background,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    marginHorizontal: 16,
+    marginVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
     color: colors.text,
-    marginBottom: 8,
   },
-  username: {
-    fontSize: 20,
-    color: colors.primary,
-    marginBottom: 8,
+  listContent: {
+    paddingBottom: 80,
   },
-  subtitle: {
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.background,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginLeft: 8,
+  },
+  credentialItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.white,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  credentialContent: {
+    flex: 1,
+  },
+  credentialTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  credentialSubtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  credentialDate: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
     fontSize: 16,
     color: colors.textSecondary,
-    marginBottom: 40,
-    textAlign: 'center',
   },
-  logoutButton: {
-    backgroundColor: colors.destructive,
-    borderRadius: 8,
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.white,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    paddingHorizontal: 40,
-    marginTop: 20,
   },
-  logoutButtonText: {
+  addButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  addButtonText: {
     color: colors.white,
     fontSize: 16,
     fontWeight: '600',

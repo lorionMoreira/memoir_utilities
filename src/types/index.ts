@@ -34,8 +34,38 @@ export interface AuthContextType extends AuthState {
   logout: () => Promise<void>;
 }
 
+// Credential Types
+export interface Credential {
+  id: number;
+  uuid: string;
+  company: string;
+  senha: string;
+  favoritos: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCredentialRequest {
+  company: string;
+  senha: string;
+  favoritos: boolean;
+}
+
+export interface UpdateCredentialRequest {
+  uuid: string;
+  company: string;
+  senha: string;
+  favoritos: boolean;
+}
+
 // Navigation Types
 export type RootStackParamList = {
   Login: undefined;
-  Home: undefined;
+  MainTabs: undefined;
+  Credenciais: undefined;
+  Menu1: undefined;
+  Menu2: undefined;
+  Settings: undefined;
+  AddCredential: undefined;
+  EditCredential: { credential: Credential };
 };

@@ -12,6 +12,8 @@ import CredencialScreen from '../screens/CredencialScreen';
 import Menu1Screen from '../screens/Menu1Screen';
 import Menu2Screen from '../screens/Menu2Screen';
 import SettingsScreen from '../screens/SettingsScreen';
+import AddCredentialScreen from '../screens/AddCredentialScreen';
+import EditCredentialScreen from '../screens/EditCredentialScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -98,13 +100,43 @@ export default function AppNavigator() {
     >
       {isAuthenticated ? (
         // Authenticated Stack - Main Tab Navigator
-        <Stack.Screen
-          name="MainTabs"
-          component={MainTabNavigator}
-          options={{
-            headerShown: false,
-          }}
-        />
+        <>
+          <Stack.Screen
+            name="MainTabs"
+            component={MainTabNavigator}
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="AddCredential"
+            component={AddCredentialScreen}
+            options={{
+              title: 'Add Credential',
+              headerStyle: {
+                backgroundColor: colors.primary,
+              },
+              headerTintColor: colors.white,
+              headerTitleStyle: {
+                fontWeight: 'bold',
+              },
+            }}
+          />
+          <Stack.Screen
+            name="EditCredential"
+            component={EditCredentialScreen}
+            options={{
+              title: 'Edit Credential',
+              headerStyle: {
+                backgroundColor: colors.primary,
+              },
+              headerTintColor: colors.white,
+              headerTitleStyle: {
+                fontWeight: 'bold',
+              },
+            }}
+          />
+        </>
       ) : (
         // Unauthenticated Stack
         <Stack.Screen
