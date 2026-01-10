@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { colors } from '../styles/colors';
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
@@ -66,7 +67,7 @@ export default function LoginScreen() {
           <TextInput
             style={styles.input}
             placeholder="Username"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textTertiary}
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
@@ -77,7 +78,7 @@ export default function LoginScreen() {
           <TextInput
             style={styles.input}
             placeholder="Password"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textTertiary}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -93,7 +94,7 @@ export default function LoginScreen() {
             disabled={isLoading}
           >
             {isLoading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.white} />
             ) : (
               <Text style={styles.buttonText}>Login</Text>
             )}

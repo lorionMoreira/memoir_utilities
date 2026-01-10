@@ -4,10 +4,11 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { RootStackParamList } from '../types';
+import { colors } from '../styles/colors';
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
-import HomeScreen from '../screens/HomeScreen';
+import CredencialScreen from '../screens/CredencialScreen';
 import Menu1Screen from '../screens/Menu1Screen';
 import Menu2Screen from '../screens/Menu2Screen';
 import SettingsScreen from '../screens/SettingsScreen';
@@ -23,8 +24,8 @@ function MainTabNavigator() {
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap;
 
-          if (route.name === 'Home') {
-            iconName = focused ? 'home' : 'home-outline';
+          if (route.name === 'Credenciais') {
+            iconName = focused ? 'key' : 'key-outline';
           } else if (route.name === 'Menu1') {
             iconName = focused ? 'apps' : 'apps-outline';
           } else if (route.name === 'Menu2') {
@@ -37,22 +38,22 @@ function MainTabNavigator() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.gray,
         headerStyle: {
-          backgroundColor: '#007AFF',
+          backgroundColor: colors.primary,
         },
-        headerTintColor: '#fff',
+        headerTintColor: colors.white,
         headerTitleStyle: {
           fontWeight: 'bold',
         },
       })}
     >
       <Tab.Screen 
-        name="Home" 
-        component={HomeScreen}
+        name="Credenciais" 
+        component={CredencialScreen}
         options={{
-          title: 'Memoir Utilities',
+          title: 'Credenciais',
         }}
       />
       <Tab.Screen 
@@ -87,9 +88,9 @@ export default function AppNavigator() {
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#007AFF',
+          backgroundColor: colors.primary,
         },
-        headerTintColor: '#fff',
+        headerTintColor: colors.white,
         headerTitleStyle: {
           fontWeight: 'bold',
         },

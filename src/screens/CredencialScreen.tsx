@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { colors } from '../styles/colors';
 
-export default function HomeScreen() {
+export default function CredencialScreen() {
   const { user, logout } = useAuth();
 
   const handleLogout = () => {
@@ -50,7 +51,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
@@ -61,29 +62,29 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginBottom: 8,
   },
   username: {
     fontSize: 20,
-    color: '#007AFF',
+    color: colors.primary,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     marginBottom: 40,
     textAlign: 'center',
   },
   logoutButton: {
-    backgroundColor: '#ff3b30',
+    backgroundColor: colors.destructive,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 40,
     marginTop: 20,
   },
   logoutButtonText: {
-    color: '#fff',
+    color: colors.white,
     fontSize: 16,
     fontWeight: '600',
   },
