@@ -32,7 +32,7 @@ export async function createCredential(data: CreateCredentialRequest): Promise<C
  */
 export async function updateCredential(data: UpdateCredentialRequest): Promise<Credential> {
   try {
-    const response = await api.put<Credential>('/api/credential/update', data);
+    const response = await api.post<Credential>('/api/credentials/update', data);
     return response.data;
   } catch (error: any) {
     console.error('Update credential error:', error);
@@ -45,7 +45,7 @@ export async function updateCredential(data: UpdateCredentialRequest): Promise<C
  */
 export async function deleteCredential(uuid: string): Promise<void> {
   try {
-    await api.delete(`/api/credential/${uuid}`);
+    await api.post('/api/credential/minus', { uuid });
   } catch (error: any) {
     console.error('Delete credential error:', error);
     throw new Error('Failed to delete credential');
