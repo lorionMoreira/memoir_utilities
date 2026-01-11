@@ -25,23 +25,25 @@ export default function EditCredentialScreen() {
   const { credential } = route.params;
   const { masterKey } = useAuth();
 
-  const [company, setCompany] = useState(credential.company);
+  const [company, setCompany] = useState('');
   const [senha, setSenha] = useState('');
   const [favoritos, setFavoritos] = useState(credential.favoritos);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Decrypt password on mount
+  // Decrypt company and password on mount
   useEffect(() => {
-    if (masterKey && credential.iv) {
+    if (masterKey && credential.iv1 && credential.iv2) {
       try {
-        const decrypted = decryptPassword(credential.senha, masterKey, credential.iv);
-        setSenha(decrypted);
+        const decryptedCompany = decryptPassword(credential.company, masterKey, credential.iv1);
+        const decryptedSenha = decryptPassword(credential.senha, masterKey, credential.iv2);
+        setCompany(decryptedCompany);
+        setSenha(decryptedSenha);
       } catch (error) {
-        Alert.alert('Error', 'Failed to decrypt password. Please try logging in again.');
+        Alert.alert('Error', 'Failed to decrypt data. Please try logging in again.');
         console.error('Decryption error:', error);
       }
     }
-  }, [credential.senha, credential.iv, masterKey]);
+  }, [credential.company, credential.senha, credential.iv1, credential.iv2, masterKey]);
 
   const handleUpdate = async () => {
     if (!company.trim() || !senha.trim()) {
@@ -56,14 +58,16 @@ export default function EditCredentialScreen() {
 
     setIsLoading(true);
     try {
-      // Encrypt password before sending to server
-      const { iv, encrypted } = encryptPassword(senha.trim(), masterKey);
+      // Encrypt both company and password before sending to server
+      const encryptedCompany = encryptPassword(company.trim(), masterKey);
+      const encryptedSenha = encryptPassword(senha.trim(), masterKey);
       
       await updateCredential({
         uuid: credential.uuid,
-        company: company.trim(),
-        senha: encrypted,
-        iv: iv,
+        company: encryptedCompany.encrypted,
+        senha: encryptedSenha.encrypted,
+        iv1: encryptedCompany.iv,
+        iv2: encryptedSenha.iv,
         favoritos,
       });
       Alert.alert('Success', 'Credential updated successfully');

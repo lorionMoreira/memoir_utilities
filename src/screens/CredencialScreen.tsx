@@ -26,30 +26,44 @@ export default function CredencialScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [hasNextPage, setHasNextPage] = useState(false);
 
-  const loadCredentials = async () => {
+  const loadCredentials = async (page: number = 0, append: boolean = false) => {
     try {
-      const data = await getCredentials();
-      setCredentials(data);
-      setFilteredCredentials(data);
+      const response = await getCredentials(page, 10);
+      const newCredentials = append ? [...credentials, ...response.content] : response.content;
+      setCredentials(newCredentials);
+      setFilteredCredentials(newCredentials);
+      setHasNextPage(response.hasNext);
+      setCurrentPage(page);
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to load credentials');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
+      setIsLoadingMore(false);
     }
   };
 
   useFocusEffect(
     useCallback(() => {
       setIsLoading(true);
-      loadCredentials();
+      loadCredentials(0, false);
     }, [])
   );
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    loadCredentials();
+    loadCredentials(0, false);
+  };
+
+  const handleLoadMore = () => {
+    if (!isLoadingMore && hasNextPage) {
+      setIsLoadingMore(true);
+      loadCredentials(currentPage + 1, true);
+    }
   };
 
   const handleSearch = (text: string) => {
@@ -57,9 +71,16 @@ export default function CredencialScreen() {
     if (text.trim() === '') {
       setFilteredCredentials(credentials);
     } else {
-      const filtered = credentials.filter((cred) =>
-        cred.company.toLowerCase().includes(text.toLowerCase())
-      );
+      const filtered = credentials.filter((cred) => {
+        // Decrypt company to search through it
+        try {
+          if (!masterKey || !cred.iv1) return false;
+          const decryptedCompany = decryptPassword(cred.company, masterKey, cred.iv1);
+          return decryptedCompany.toLowerCase().includes(text.toLowerCase());
+        } catch {
+          return false;
+        }
+      });
       setFilteredCredentials(filtered);
     }
   };
@@ -75,8 +96,8 @@ export default function CredencialScreen() {
   const favorites = filteredCredentials.filter((cred) => cred.favoritos);
   const records = filteredCredentials.filter((cred) => !cred.favoritos);
 
-  // Function to decrypt password safely
-  const getDecryptedPassword = (encryptedPassword: string, iv: string): string => {
+  // Function to decrypt data safely
+  const getDecryptedData = (encryptedData: string, iv: string | null): string => {
     if (!masterKey) {
       return '***';
     }
@@ -84,9 +105,9 @@ export default function CredencialScreen() {
       return '[No IV]';
     }
     try {
-      return decryptPassword(encryptedPassword, masterKey, iv);
+      return decryptPassword(encryptedData, masterKey, iv);
     } catch (error) {
-      console.error('Failed to decrypt password:', error);
+      console.error('Failed to decrypt data:', error);
       return '[Error decrypting]';
     }
   };
@@ -97,8 +118,8 @@ export default function CredencialScreen() {
       onPress={() => handleCredentialPress(item)}
     >
       <View style={styles.credentialContent}>
-        <Text style={styles.credentialTitle}>{item.company}</Text>
-        <Text style={styles.credentialSubtitle}>{getDecryptedPassword(item.senha, item.iv)}</Text>
+        <Text style={styles.credentialTitle}>{getDecryptedData(item.company, item.iv1)}</Text>
+        <Text style={styles.credentialSubtitle}>{getDecryptedData(item.senha, item.iv2)}</Text>
         <Text style={styles.credentialDate}>
           {new Date(item.updatedAt).toLocaleDateString()}
         </Text>
@@ -165,6 +186,15 @@ export default function CredencialScreen() {
             )}
           </>
         }
+        ListFooterComponent={
+          isLoadingMore ? (
+            <View style={styles.loadingMoreContainer}>
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : null
+        }
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -266,6 +296,10 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: colors.textSecondary,
+  },
+  loadingMoreContainer: {
+    paddingVertical: 20,
+    alignItems: 'center',
   },
   footer: {
     position: 'absolute',

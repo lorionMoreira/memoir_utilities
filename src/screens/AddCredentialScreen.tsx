@@ -37,13 +37,15 @@ export default function AddCredentialScreen() {
 
     setIsLoading(true);
     try {
-      // Encrypt password before sending to server
-      const { iv, encrypted } = encryptPassword(senha.trim(), masterKey);
+      // Encrypt both company and password before sending to server
+      const encryptedCompany = encryptPassword(company.trim(), masterKey);
+      const encryptedSenha = encryptPassword(senha.trim(), masterKey);
       
       await createCredential({
-        company: company.trim(),
-        senha: encrypted,
-        iv: iv,
+        company: encryptedCompany.encrypted,
+        senha: encryptedSenha.encrypted,
+        iv1: encryptedCompany.iv,
+        iv2: encryptedSenha.iv,
         favoritos,
       });
       Alert.alert('Success', 'Credential created successfully');

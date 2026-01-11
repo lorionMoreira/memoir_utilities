@@ -1,12 +1,14 @@
 import api from '../config/api';
-import { Credential, CreateCredentialRequest, UpdateCredentialRequest } from '../types';
+import { Credential, CreateCredentialRequest, UpdateCredentialRequest, PaginatedResponse } from '../types';
 
 /**
- * Get all credentials
+ * Get credentials with pagination
  */
-export async function getCredentials(): Promise<Credential[]> {
+export async function getCredentials(page: number = 0, size: number = 10): Promise<PaginatedResponse<Credential>> {
   try {
-    const response = await api.get<Credential[]>('/api/credentials');
+    const response = await api.get<PaginatedResponse<Credential>>('/api/credentials', {
+      params: { page, size }
+    });
     return response.data;
   } catch (error: any) {
     console.error('Get credentials error:', error);
