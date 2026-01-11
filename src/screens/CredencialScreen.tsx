@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,10 +14,13 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../styles/colors';
 import { getCredentials } from '../services/credentialService';
+import { decryptPassword } from '../services/cryptoService';
+import { useAuth } from '../contexts/AuthContext';
 import { Credential } from '../types';
 
 export default function CredencialScreen() {
   const navigation = useNavigation();
+  const { masterKey } = useAuth();
   const [credentials, setCredentials] = useState<Credential[]>([]);
   const [filteredCredentials, setFilteredCredentials] = useState<Credential[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,6 +75,22 @@ export default function CredencialScreen() {
   const favorites = filteredCredentials.filter((cred) => cred.favoritos);
   const records = filteredCredentials.filter((cred) => !cred.favoritos);
 
+  // Function to decrypt password safely
+  const getDecryptedPassword = (encryptedPassword: string, iv: string): string => {
+    if (!masterKey) {
+      return '***';
+    }
+    if (!iv) {
+      return '[No IV]';
+    }
+    try {
+      return decryptPassword(encryptedPassword, masterKey, iv);
+    } catch (error) {
+      console.error('Failed to decrypt password:', error);
+      return '[Error decrypting]';
+    }
+  };
+
   const renderCredentialItem = ({ item }: { item: Credential }) => (
     <TouchableOpacity
       style={styles.credentialItem}
@@ -79,7 +98,7 @@ export default function CredencialScreen() {
     >
       <View style={styles.credentialContent}>
         <Text style={styles.credentialTitle}>{item.company}</Text>
-        <Text style={styles.credentialSubtitle}>{item.senha}</Text>
+        <Text style={styles.credentialSubtitle}>{getDecryptedPassword(item.senha, item.iv)}</Text>
         <Text style={styles.credentialDate}>
           {new Date(item.updatedAt).toLocaleDateString()}
         </Text>

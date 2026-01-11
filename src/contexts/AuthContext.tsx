@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { AppState, AppStateStatus } from 'react-native';
 import * as authService from '../services/authService';
 import { getToken, getSalt, isTokenExpired, removeToken } from '../helpers';
+import { deriveMasterKey } from '../services/cryptoService';
 import { AuthContextType, User } from '../types';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -11,6 +12,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [masterKey, setMasterKey] = useState<string | null>(null);
   
   const appState = useRef(AppState.currentState);
 
@@ -118,6 +120,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser({ username: response.username, salt: response.salt });
       setToken(response.token);
       setIsAuthenticated(true);
+      
+      // Derive master key from password and salt
+      const key = await deriveMasterKey(password, response.salt);
+      setMasterKey(key);
     } catch (error: any) {
 
       throw error; // Re-throw to let LoginScreen handle the error
@@ -143,6 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setToken(null);
       setIsAuthenticated(false);
+      setMasterKey(null); // Clear master key from memory
     }
   };
 
@@ -153,6 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated,
     login,
     logout,
+    masterKey,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -32,6 +32,7 @@ export interface AuthState {
 export interface AuthContextType extends AuthState {
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  masterKey: string | null;
 }
 
 // Credential Types
@@ -40,6 +41,7 @@ export interface Credential {
   uuid: string;
   company: string;
   senha: string;
+  iv: string;
   favoritos: boolean;
   createdAt: string;
   updatedAt: string;
@@ -48,6 +50,7 @@ export interface Credential {
 export interface CreateCredentialRequest {
   company: string;
   senha: string;
+  iv: string;
   favoritos: boolean;
 }
 
@@ -55,6 +58,7 @@ export interface UpdateCredentialRequest {
   uuid: string;
   company: string;
   senha: string;
+  iv: string;
   favoritos: boolean;
 }
 

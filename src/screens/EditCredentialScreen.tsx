@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,8 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { colors } from '../styles/colors';
 import { updateCredential, deleteCredential } from '../services/credentialService';
+import { encryptPassword, decryptPassword } from '../services/cryptoService';
+import { useAuth } from '../contexts/AuthContext';
 import { RootStackParamList } from '../types';
 
 type EditCredentialRouteProp = RouteProp<RootStackParamList, 'EditCredential'>;
@@ -21,11 +23,25 @@ export default function EditCredentialScreen() {
   const navigation = useNavigation();
   const route = useRoute<EditCredentialRouteProp>();
   const { credential } = route.params;
+  const { masterKey } = useAuth();
 
   const [company, setCompany] = useState(credential.company);
-  const [senha, setSenha] = useState(credential.senha);
+  const [senha, setSenha] = useState('');
   const [favoritos, setFavoritos] = useState(credential.favoritos);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Decrypt password on mount
+  useEffect(() => {
+    if (masterKey && credential.iv) {
+      try {
+        const decrypted = decryptPassword(credential.senha, masterKey, credential.iv);
+        setSenha(decrypted);
+      } catch (error) {
+        Alert.alert('Error', 'Failed to decrypt password. Please try logging in again.');
+        console.error('Decryption error:', error);
+      }
+    }
+  }, [credential.senha, credential.iv, masterKey]);
 
   const handleUpdate = async () => {
     if (!company.trim() || !senha.trim()) {
@@ -33,12 +49,21 @@ export default function EditCredentialScreen() {
       return;
     }
 
+    if (!masterKey) {
+      Alert.alert('Error', 'Encryption key not available. Please login again.');
+      return;
+    }
+
     setIsLoading(true);
     try {
+      // Encrypt password before sending to server
+      const { iv, encrypted } = encryptPassword(senha.trim(), masterKey);
+      
       await updateCredential({
         uuid: credential.uuid,
         company: company.trim(),
-        senha: senha.trim(),
+        senha: encrypted,
+        iv: iv,
         favoritos,
       });
       Alert.alert('Success', 'Credential updated successfully');

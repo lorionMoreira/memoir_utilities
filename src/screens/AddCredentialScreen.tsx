@@ -13,9 +13,12 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../styles/colors';
 import { createCredential } from '../services/credentialService';
+import { encryptPassword } from '../services/cryptoService';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function AddCredentialScreen() {
   const navigation = useNavigation();
+  const { masterKey } = useAuth();
   const [company, setCompany] = useState('');
   const [senha, setSenha] = useState('');
   const [favoritos, setFavoritos] = useState(false);
@@ -27,11 +30,20 @@ export default function AddCredentialScreen() {
       return;
     }
 
+    if (!masterKey) {
+      Alert.alert('Error', 'Encryption key not available. Please login again.');
+      return;
+    }
+
     setIsLoading(true);
     try {
+      // Encrypt password before sending to server
+      const { iv, encrypted } = encryptPassword(senha.trim(), masterKey);
+      
       await createCredential({
         company: company.trim(),
-        senha: senha.trim(),
+        senha: encrypted,
+        iv: iv,
         favoritos,
       });
       Alert.alert('Success', 'Credential created successfully');
