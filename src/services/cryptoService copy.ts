@@ -34,25 +34,13 @@ export async function deriveMasterKey(password: string, salt: string): Promise<s
  * Encrypts a password using AES-256 with explicit IV
  * Returns both IV and encrypted data separately
  */
-
-export const getRandomWordArray = (bytes: number) => {
-  // 1. Gera bytes aleatórios nativos (Síncrono, funciona no Expo moderno)
-  const randomBytes = Crypto.getRandomBytes(bytes);
-  
-  // 2. Converte para Hexadecimal
-  const hexString = [...randomBytes]
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-
-  // 3. Converte para o formato que o CryptoJS entende (WordArray)
-  return CryptoJS.enc.Hex.parse(hexString);
-};
-
-export function encryptPassword(data: string, masterKey: string): { iv: string; encrypted: string } {
+export async function encryptPassword(data: string, masterKey: string): Promise<{ iv: string; encrypted: string }> {
   try {
-    // Generate random IV (16 bytes for AES)
-    //const iv = CryptoJS.lib.WordArray.random(IV_SIZE);
-    const iv = getRandomWordArray(16);
+    // Generate random IV (16 bytes for AES) using expo-crypto
+    const ivBytes = await Crypto.getRandomBytesAsync(IV_SIZE);
+    const ivArray = Array.from(ivBytes);
+    const iv = CryptoJS.lib.WordArray.create(ivArray);
+    
     // Encrypt with explicit IV
     const encrypted = CryptoJS.AES.encrypt(data, CryptoJS.enc.Hex.parse(masterKey), {
       iv: iv,
@@ -97,3 +85,5 @@ export function decryptPassword(encryptedContent: string, masterKey: string, iv:
     throw new Error('Failed to decrypt password');
   }
 }
+// const encryptedCompany = await encryptPassword(company.trim(), masterKey);
+//      const encryptedSenha = await encryptPassword(senha.trim(), masterKey);

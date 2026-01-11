@@ -1,137 +1,93 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL, API_TIMEOUT, API_CONFIG } from '../config/api';
-import { STORAGE_KEYS, API_ENDPOINTS } from '../constants';
-import { User, ApiResponse } from '../types';
-
-// Create axios instance
-const apiClient: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: API_TIMEOUT,
-  headers: API_CONFIG.headers,
-});
-
-// Request interceptor to add JWT token to headers
-apiClient.interceptors.request.use(
-  async (config) => {
-    const token = await AsyncStorage.getItem(STORAGE_KEYS.JWT_TOKEN);
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor to handle errors
-apiClient.interceptors.response.use(
-  (response) => response,
-  async (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid, clear storage
-      await AsyncStorage.removeItem(STORAGE_KEYS.JWT_TOKEN);
-      await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA);
-    }
-    return Promise.reject(error);
-  }
-);
+import api from '../config/api';
+import { saveToken, removeToken } from '../helpers';
+import { AuthRequest, AuthResponse } from '../types';
 
 /**
- * Login with username and password to get JWT token
+ * Login with username and password
  */
-export const login = async (
+export async function login(
   username: string,
   password: string
-): Promise<{ token: string; user: User }> => {
+): Promise<AuthResponse> {
   try {
-    const response = await apiClient.post<{ token: string; username: string }>(
-      API_ENDPOINTS.LOGIN,
-      { username, password }
-    );
+    const requestData: AuthRequest = { username, password };
+    
+    const response = await api.post<AuthResponse>('/api/auth/login', requestData);
+    
+    const { token, username: returnedUsername, salt } = response.data;
+    
+    // Calculate token expiry (24 hours from now)
+    const tokenExpiry = Date.now() + 24 * 60 * 60 * 1000;
+    
+    // Save token, salt, and expiry to secure store
+    await saveToken(token, salt, tokenExpiry.toString());
+    
+    return response.data;
+  } catch (error: any) {
+    // Handle different error responses from backend
 
-    const { token } = response.data;
-    
-    // Create user object
-    const user: User = {
-      id: username,
-      username: username,
-    };
-    
-    // Store token and user data
-    await AsyncStorage.setItem(STORAGE_KEYS.JWT_TOKEN, token);
-    await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(user));
-    
-    return { token, user };
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw new Error(
-        error.response?.data?.message || error.message || 'Network error during login'
-      );
+    if (error.response) {
+      const status = error.response.status;
+      const message = error.response.data;
+      console.log(error)
+      if (status === 401) {
+        // Invalid credentials with attempts remaining
+        throw new Error(typeof message === 'string' ? message : 'Invalid username or password');
+      } else if (status === 403) {
+        // Account locked
+        throw new Error(typeof message === 'string' ? message : 'Account temporarily locked');
+      } else {
+        throw new Error('Login failed. Please try again.');
+      }
+    } else if (error.request) {
+      
+      throw new Error(error.Request);
+    } else {
+      throw new Error('An unexpected error occurred.');
     }
-    throw error;
   }
-};
+}
 
 /**
- * Logout - clear token and notify backend
+ * Refresh authentication token
  */
-export const logout = async (): Promise<void> => {
+export async function refreshToken(token: string): Promise<AuthResponse> {
   try {
-    // Attempt to notify backend (optional, non-blocking)
-    await apiClient.post(API_ENDPOINTS.LOGOUT).catch(() => {
-      // Ignore logout endpoint errors
+    const response = await api.post<AuthResponse>('/api/auth/refresh-token', {
+      refreshToken: token,
     });
-  } finally {
-    // Always clear local storage
-    await AsyncStorage.removeItem(STORAGE_KEYS.JWT_TOKEN);
-    await AsyncStorage.removeItem(STORAGE_KEYS.USER_DATA);
-    await AsyncStorage.removeItem(STORAGE_KEYS.ENCRYPTED_MASTER_KEY_FILE);
-  }
-};
 
-/**
- * Check if user has valid JWT token stored
- */
-export const hasValidToken = async (): Promise<boolean> => {
-  const token = await AsyncStorage.getItem(STORAGE_KEYS.JWT_TOKEN);
-  return !!token;
-};
-
-/**
- * Get stored user data
- */
-export const getStoredUser = async (): Promise<User | null> => {
-  try {
-    const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
-    return userData ? JSON.parse(userData) : null;
-  } catch {
-    return null;
-  }
-};
-
-/**
- * Refresh JWT token (if backend supports token refresh)
- */
-export const refreshToken = async (): Promise<string> => {
-  try {
-    const response = await apiClient.post<ApiResponse<{ token: string }>>(
-      API_ENDPOINTS.REFRESH_TOKEN
-    );
-
-    if (response.data.success && response.data.data) {
-      const { token } = response.data.data;
-      await AsyncStorage.setItem(STORAGE_KEYS.JWT_TOKEN, token);
-      return token;
+    const { token: newToken, salt } = response.data;
+    
+    // Calculate new token expiry (24 hours from now)
+    const tokenExpiry = Date.now() + 24 * 60 * 60 * 1000;
+    
+    // Save new token, salt, and expiry
+    await saveToken(newToken, salt, tokenExpiry.toString());
+    
+    return response.data;
+  } catch (error: any) {
+    console.error('Token refresh failed:', error);
+    
+    // If refresh fails, clear stored data
+    await removeToken();
+    
+    if (error.response?.status === 401) {
+      throw new Error('Session expired. Please login again.');
+    } else {
+      throw new Error('Failed to refresh session.');
     }
+  }
+}
 
-    throw new Error('Token refresh failed');
+/**
+ * Logout - clear all stored authentication data
+ */
+export async function logout(): Promise<void> {
+  try {
+    await removeToken();
   } catch (error) {
-    await logout();
+    console.error('Logout error:', error);
     throw error;
   }
-};
-
-// Export the configured axios instance for use in other services
-export { apiClient };
+}
