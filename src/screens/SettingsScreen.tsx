@@ -1,10 +1,12 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { exportAllCredentials } from '../helpers/exportHelper';
 import { colors } from '../styles/colors';
 
 export default function SettingsScreen() {
-  const { logout } = useAuth();
+  const { logout, masterKey } = useAuth();
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleLogout = () => {
     Alert.alert(
@@ -31,6 +33,34 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleExport = async () => {
+    if (!masterKey) {
+      Alert.alert('Erro', 'Chave de criptografia não encontrada. Faça login novamente.');
+      return;
+    }
+
+    Alert.alert(
+      'Exportar Credenciais',
+      'Isso irá gerar um arquivo JSON com todas as suas senhas DESCRIPTOGRAFADAS. Certifique-se de compartilhar ou salvar este arquivo em um local seguro.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Continuar e Exportar',
+          onPress: async () => {
+            try {
+              setIsExporting(true);
+              await exportAllCredentials(masterKey);
+            } catch (error: any) {
+              Alert.alert('Erro na Exportação', error.message || 'Ocorreu um erro desconhecido.');
+            } finally {
+              setIsExporting(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Settings</Text>
@@ -38,8 +68,24 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
         
-        <TouchableOpacity style={styles.button} onPress={handleLogout}>
+        <TouchableOpacity style={styles.buttonLogout} onPress={handleLogout}>
           <Text style={styles.buttonText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={[styles.section, { marginTop: 20 }]}>
+        <Text style={styles.sectionTitle}>Data Management</Text>
+        
+        <TouchableOpacity 
+          style={styles.buttonExport} 
+          onPress={handleExport}
+          disabled={isExporting}
+        >
+          {isExporting ? (
+            <ActivityIndicator color={colors.white} />
+          ) : (
+            <Text style={styles.buttonText}>Exportar Credenciais (JSON)</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -77,8 +123,14 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 15,
   },
-  button: {
+  buttonLogout: {
     backgroundColor: colors.destructiveAlt,
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonExport: {
+    backgroundColor: colors.primary,
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',

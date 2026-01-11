@@ -47,7 +47,7 @@ export async function updateCredential(data: UpdateCredentialRequest): Promise<C
  */
 export async function deleteCredential(uuid: string): Promise<void> {
   try {
-    await api.post('/api/credential/minus', { uuid });
+    await api.post('/api/credentials/minus', { uuid });
   } catch (error: any) {
     console.error('Delete credential error:', error);
     throw new Error('Failed to delete credential');
