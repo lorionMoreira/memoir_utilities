@@ -119,6 +119,7 @@ export default function CredencialScreen() {
     >
       <View style={styles.credentialContent}>
         <Text style={styles.credentialTitle}>{getDecryptedData(item.company, item.iv1)}</Text>
+        <Text style={styles.credentialSubtitle}>{getDecryptedData(item.email, item.iv3)}</Text>
         <Text style={styles.credentialSubtitle}>{getDecryptedData(item.senha, item.iv2)}</Text>
         <Text style={styles.credentialDate}>
           {new Date(item.updatedAt).toLocaleDateString()}

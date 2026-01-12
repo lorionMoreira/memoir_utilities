@@ -20,12 +20,13 @@ export default function AddCredentialScreen() {
   const navigation = useNavigation();
   const { masterKey } = useAuth();
   const [company, setCompany] = useState('');
+  const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [favoritos, setFavoritos] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSave = async () => {
-    if (!company.trim() || !senha.trim()) {
+    if (!company.trim() || !email.trim() || !senha.trim()) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
@@ -37,15 +38,18 @@ export default function AddCredentialScreen() {
 
     setIsLoading(true);
     try {
-      // Encrypt both company and password before sending to server
+      // Encrypt company, email and password before sending to server
       const encryptedCompany = encryptPassword(company.trim(), masterKey);
+      const encryptedEmail = encryptPassword(email.trim(), masterKey);
       const encryptedSenha = encryptPassword(senha.trim(), masterKey);
       
       await createCredential({
         company: encryptedCompany.encrypted,
+        email: encryptedEmail.encrypted,
         senha: encryptedSenha.encrypted,
         iv1: encryptedCompany.iv,
         iv2: encryptedSenha.iv,
+        iv3: encryptedEmail.iv,
         favoritos,
       });
       Alert.alert('Success', 'Credential created successfully');
@@ -67,6 +71,18 @@ export default function AddCredentialScreen() {
           placeholderTextColor={colors.textTertiary}
           value={company}
           onChangeText={setCompany}
+          editable={!isLoading}
+        />
+
+        <Text style={styles.label}>Email *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter email"
+          placeholderTextColor={colors.textTertiary}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
           editable={!isLoading}
         />
 

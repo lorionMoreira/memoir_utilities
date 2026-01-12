@@ -39,10 +39,12 @@ export interface AuthContextType extends AuthState {
 export interface Credential {
   uuid: string;
   company: string;
+  email: string;
   senha: string;
   favoritos: boolean;
   iv1: string | null;
   iv2: string | null;
+  iv3: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -59,19 +61,23 @@ export interface PaginatedResponse<T> {
 
 export interface CreateCredentialRequest {
   company: string;
+  email: string;
   senha: string;
   favoritos: boolean;
   iv1: string;
   iv2: string;
+  iv3: string;
 }
 
 export interface UpdateCredentialRequest {
   uuid: string;
   company: string;
+  email: string;
   senha: string;
   favoritos: boolean;
   iv1: string;
   iv2: string;
+  iv3: string;
 }
 
 // Navigation Types

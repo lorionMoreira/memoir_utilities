@@ -21,7 +21,10 @@ export const exportAllCredentials = async (masterKey: string): Promise<void> => 
             id: cred.uuid,
             empresa: cred.iv1 
               ? decryptPassword(cred.company, masterKey, cred.iv1) 
-              : cred.company, // Fallback se não tiver IV (caso legado)
+              : cred.company,
+            email: cred.iv3
+              ? decryptPassword(cred.email, masterKey, cred.iv3)
+              : cred.email,
             senha: cred.iv2 
               ? decryptPassword(cred.senha, masterKey, cred.iv2) 
               : '[Erro ao descriptografar senha]',

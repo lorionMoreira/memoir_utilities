@@ -26,27 +26,30 @@ export default function EditCredentialScreen() {
   const { masterKey } = useAuth();
 
   const [company, setCompany] = useState('');
+  const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [favoritos, setFavoritos] = useState(credential.favoritos);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Decrypt company and password on mount
+  // Decrypt company, email and password on mount
   useEffect(() => {
-    if (masterKey && credential.iv1 && credential.iv2) {
+    if (masterKey && credential.iv1 && credential.iv2 && credential.iv3) {
       try {
         const decryptedCompany = decryptPassword(credential.company, masterKey, credential.iv1);
+        const decryptedEmail = decryptPassword(credential.email, masterKey, credential.iv3);
         const decryptedSenha = decryptPassword(credential.senha, masterKey, credential.iv2);
         setCompany(decryptedCompany);
+        setEmail(decryptedEmail);
         setSenha(decryptedSenha);
       } catch (error) {
         Alert.alert('Error', 'Failed to decrypt data. Please try logging in again.');
         console.error('Decryption error:', error);
       }
     }
-  }, [credential.company, credential.senha, credential.iv1, credential.iv2, masterKey]);
+  }, [credential.company, credential.email, credential.senha, credential.iv1, credential.iv2, credential.iv3, masterKey]);
 
   const handleUpdate = async () => {
-    if (!company.trim() || !senha.trim()) {
+    if (!company.trim() || !email.trim() || !senha.trim()) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
@@ -58,16 +61,19 @@ export default function EditCredentialScreen() {
 
     setIsLoading(true);
     try {
-      // Encrypt both company and password before sending to server
+      // Encrypt company, email and password before sending to server
       const encryptedCompany = encryptPassword(company.trim(), masterKey);
+      const encryptedEmail = encryptPassword(email.trim(), masterKey);
       const encryptedSenha = encryptPassword(senha.trim(), masterKey);
       
       await updateCredential({
         uuid: credential.uuid,
         company: encryptedCompany.encrypted,
+        email: encryptedEmail.encrypted,
         senha: encryptedSenha.encrypted,
         iv1: encryptedCompany.iv,
         iv2: encryptedSenha.iv,
+        iv3: encryptedEmail.iv,
         favoritos,
       });
       Alert.alert('Success', 'Credential updated successfully');
@@ -118,6 +124,18 @@ export default function EditCredentialScreen() {
           placeholderTextColor={colors.textTertiary}
           value={company}
           onChangeText={setCompany}
+          editable={!isLoading}
+        />
+
+        <Text style={styles.label}>Email *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter email"
+          placeholderTextColor={colors.textTertiary}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
           editable={!isLoading}
         />
 

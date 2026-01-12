@@ -12,7 +12,7 @@ export async function login(
   try {
     const requestData: AuthRequest = { username, password };
     
-    const response = await api.post<AuthResponse>('/api/auth/login', requestData);
+    const response = await api.post<AuthResponse>('/api/auth/entry', requestData);
     
     const { token, username: returnedUsername, salt } = response.data;
     
