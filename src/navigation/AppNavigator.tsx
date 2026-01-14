@@ -9,7 +9,7 @@ import { colors } from '../styles/colors';
 // Screens
 import LoginScreen from '../screens/LoginScreen';
 import CredencialScreen from '../screens/CredencialScreen';
-import Menu1Screen from '../screens/Menu1Screen';
+import PhotoScreen from '../screens/PhotoScreen';
 import Menu2Screen from '../screens/Menu2Screen';
 import SettingsScreen from '../screens/SettingsScreen';
 import AddCredentialScreen from '../screens/AddCredentialScreen';
@@ -28,8 +28,8 @@ function MainTabNavigator() {
 
           if (route.name === 'Credenciais') {
             iconName = focused ? 'key' : 'key-outline';
-          } else if (route.name === 'Menu1') {
-            iconName = focused ? 'apps' : 'apps-outline';
+          } else if (route.name === 'Photos') {
+            iconName = focused ? 'image' : 'image-outline';
           } else if (route.name === 'Menu2') {
             iconName = focused ? 'grid' : 'grid-outline';
           } else if (route.name === 'Settings') {
@@ -59,10 +59,10 @@ function MainTabNavigator() {
         }}
       />
       <Tab.Screen 
-        name="Menu1" 
-        component={Menu1Screen}
+        name="Photos" 
+        component={PhotoScreen}
         options={{
-          title: 'Menu 1',
+          title: 'Gallery',
         }}
       />
       <Tab.Screen 

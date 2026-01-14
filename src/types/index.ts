@@ -80,12 +80,29 @@ export interface UpdateCredentialRequest {
   iv3: string;
 }
 
+// Photo Types
+export interface Photo {
+  uuid: string;
+  originalFileName: string;
+  downloadUrl: string;
+}
+
+export interface PhotoPaginatedResponse {
+  content: Photo[];
+  page: {
+    size: number;
+    number: number;
+    totalElements: number;
+    totalPages: number;
+  };
+}
+
 // Navigation Types
 export type RootStackParamList = {
   Login: undefined;
   MainTabs: undefined;
   Credenciais: undefined;
-  Menu1: undefined;
+  Photos: undefined;
   Menu2: undefined;
   Settings: undefined;
   AddCredential: undefined;
